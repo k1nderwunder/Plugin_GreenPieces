@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Карта Яндекса</title>
-  <script src="https://api-maps.yandex.ru/2.1/?apikey=ВАШ_API_KEY&lang=ru_RU" type="text/javascript"></script>
+  <title>Yandex Map Field Test</title>
+  <script src="https://api-maps.yandex.ru/2.1/?apikey=ВАШ_API_KEY&lang=ru_RU"></script>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
+      overflow: hidden;
     }
 
     #map {
@@ -22,25 +23,60 @@
 <body>
   <div id="map"></div>
 
-  <script>
-    ymaps.ready(init);
+<script>
+  const FIELD_NAME = "ШЛ01-11";
+  window.mapReady = false;
 
-    function init() {
+  ymaps.ready(init);
+
+  async function init() {
+    try {
       const map = new ymaps.Map("map", {
-        center: [56.532562, 92.956225],
-        zoom: 18,
+        center: [56.0184, 92.867],
+        zoom: 12,
         type: "yandex#satellite",
         controls: []
       });
 
-      map.behaviors.disable([
-        "scrollZoom",
-        "drag",
-        "multiTouch"
-      ]);
+      const response = await fetch("cleaned_fields.json");
+      const fields = await response.json();
 
-      window.mapReady = true;
+      const field = fields.find(f => f.name === FIELD_NAME);
+      if (!field) {
+        throw new Error("Поле не найдено: " + FIELD_NAME);
+      }
+
+      const coords = [
+        field.outerBoundary.map(coord => [coord[1], coord[0]])
+      ];
+
+      const polygon = new ymaps.Polygon(
+        coords,
+        { hintContent: FIELD_NAME },
+        {
+          fillOpacity: 0,
+          strokeColor: "#ff0000",
+          strokeWidth: 3
+        }
+      );
+
+      map.geoObjects.add(polygon);
+
+      const bounds = polygon.geometry.getBounds();
+      map.setBounds(bounds, {
+        checkZoomRange: true,
+        zoomMargin: 40
+      });
+
+      setTimeout(() => {
+        window.mapReady = true;
+      }, 3000);
+
+    } catch (e) {
+      console.error(e);
+      window.mapReady = "error";
     }
-  </script>
+  }
+</script>
 </body>
 </html>
