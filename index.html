@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Field Screenshot</title>
-  <script src="https://api-maps.yandex.ru/2.1/?apikey=&lang=ru_RU"></script>
+  <script src="https://api-maps.yandex.ru/2.1/?apikey={{YANDEX_MAPS_API_KEY}}&lang=ru_RU"></script>
   <style>
     html, body {
       margin: 0;
@@ -26,6 +26,7 @@
 
   <script>
     window.mapReady = false;
+    window.screenshotBounds = null;
 
     ymaps.ready(init);
 
@@ -68,13 +69,34 @@
 
         map.geoObjects.add(polygon);
 
-        const bounds = polygon.geometry.getBounds();
-        map.setBounds(bounds, {
+        const polygonBounds = polygon.geometry.getBounds();
+        map.setBounds(polygonBounds, {
           checkZoomRange: true,
           zoomMargin: 40
         });
 
         setTimeout(() => {
+          const visibleBounds = map.getBounds();
+
+          if (!visibleBounds || visibleBounds.length !== 2) {
+            throw new Error("Не удалось получить границы видимой области");
+          }
+
+          const southWest = visibleBounds[0]; // [lat, lon]
+          const northEast = visibleBounds[1]; // [lat, lon]
+
+          const south = southWest[0];
+          const west = southWest[1];
+          const north = northEast[0];
+          const east = northEast[1];
+
+          window.screenshotBounds = {
+            topLeft: [west, north],
+            topRight: [east, north],
+            bottomRight: [east, south],
+            bottomLeft: [west, south]
+          };
+
           window.mapReady = true;
         }, 2500);
 
